@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bharat Yatra - Your Journey Begins Here</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Leaflet Map Library CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        #video-bg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            transform: translateX(-50%) translateY(-50%);
+            background: url('https://placehold.co/1920x1080/000000/FFFFFF?text=Loading+Video...') no-repeat center center;
+            background-size: cover;
+            filter: brightness(0.8);
+        }
+
+        .hero-section {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.3));
+            z-index: 0;
+        }
+
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        header {
+            transition: all 0.3s ease-in-out;
+        }
+
+        header.scrolled {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-gradient {
+            background-image: linear-gradient(to right, #3b82f6, #60a5fa);
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .transport-icon.active {
+            background-color: #3b82f6;
+            color: white;
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.2);
+        }
+        
+        .transport-icon {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .transport-icon.active .fas {
+            color: white !important;
+        }
+
+        .notification-modal, .result-card {
+            transition: all 0.3s ease-out;
+        }
+        
+        .result-card-enter, .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .autocomplete-item, .bus-location-input {
+            cursor: pointer;
+        }
+        .autocomplete-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        #map-modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #map {
+            height: calc(100vh - 150px);
+            border-radius: 0.5rem;
+        }
+        
+        .input-with-icon-container {
+            position: relative;
+        }
+        
+        .input-with-icon {
+            padding-left: 2.75rem;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            padding-left: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-800">
+    
+    <video autoplay muted loop playsinline id="video-bg" poster="https://placehold.co/1920x1080/000000/FFFFFF?text=Bharat+Yatra">
+        <source src="https://videos.pexels.com/video-files/2099395/2099395-hd_1920_1080_25fps.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Header -->
+    <header class="bg-white/10 backdrop-blur-sm fixed top-0 left-0 right-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-white">
+                <i class="fas fa-route mr-2"></i>Bharat Yatra
+            </a>
+            <div class="hidden md:flex space-x-6 items-center">
+                <a href="#" class="text-white/80 hover:text-white font-medium transition duration-300">Home</a>
+                <a href="#search" class="text-white/80 hover:text-white font-medium transition duration-300">Book Tickets</a>
+                <a href="#" class="text-white/80 hover:text-white font-medium transition duration-300">Offers</a>
+                <a href="#" class="bg-blue-600 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 shadow-lg hover:shadow-blue-500/50 transition-all duration-300">Login</a>
+            </div>
+            <button class="md:hidden text-2xl text-white">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-white pt-48 pb-24 md:pt-64 md:pb-40">
+        <div class="hero-overlay"></div>
+        <div class="container mx-auto text-center px-6 relative z-10">
+            <h1 id="hero-title" class="text-4xl md:text-6xl font-extrabold mb-4 leading-tight tracking-tight text-white opacity-0" style="animation-delay: 0.2s;">Your Next Great Journey Awaits</h1>
+            <p id="hero-subtitle" class="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto opacity-0" style="animation-delay: 0.4s;">From snow-capped peaks to sun-drenched coasts, find your perfect trip across India.</p>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <main id="search" class="container mx-auto px-4 md:px-6 pb-12 -mt-20 md:-mt-28 relative z-10">
+        <div class="glassmorphism rounded-2xl shadow-2xl p-6 md:p-8 max-w-4xl mx-auto">
+            
+            <!-- Transport Mode Selector -->
+            <div id="transport-modes" class="flex justify-around items-center border-b border-white/20 pb-6 mb-6 flex-wrap gap-4">
+                <button class="transport-icon flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-transparent hover:bg-white/20 w-24 active" data-mode="plane">
+                    <i class="fas fa-plane text-2xl text-white/80"></i>
+                    <span class="font-semibold text-white">Plane</span>
+                    <span class="text-xs text-white/60 -mt-1">Int'l & Domestic</span>
+                </button>
+                <button class="transport-icon flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-transparent hover:bg-white/20 w-24" data-mode="train">
+                    <i class="fas fa-train-subway text-2xl text-white/80"></i>
+                    <span class="font-semibold text-white">Train</span>
+                </button>
+                <button class="transport-icon flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-transparent hover:bg-white/20 w-24" data-mode="bus">
+                    <i class="fas fa-bus text-2xl text-white/80"></i>
+                    <span class="font-semibold text-white">Bus</span>
+                </button>
+                <button class="transport-icon flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-transparent hover:bg-white/20 w-24" data-mode="metro">
+                    <i class="fas fa-train-tram text-2xl text-white/80"></i>
+                    <span class="font-semibold text-white">Metro</span>
+                </button>
+            </div>
+
+            <!-- Trip Type Selector (for flights only) -->
+            <div id="trip-type-container" class="mb-6 hidden">
+                <div class="flex items-center justify-center gap-2 bg-black/20 p-1 rounded-lg max-w-xs mx-auto">
+                    <button id="trip-type-domestic" class="trip-type-btn w-full text-center px-4 py-2 rounded-md font-semibold text-white/60 transition-all duration-300">Domestic</button>
+                    <button id="trip-type-international" class="trip-type-btn w-full text-center px-4 py-2 rounded-md font-semibold text-white/60 transition-all duration-300">International</button>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <form id="search-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end text-white">
+                <!-- From (Domestic Plane) -->
+                <div id="from-domestic-container" class="lg:col-span-2">
+                    <label for="from-state" class="block text-sm font-medium text-white/80 mb-1">From</label>
+                    <div class="flex gap-2">
+                        <select id="from-state" class="w-1/2 p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition text-white">
+                            <option value="" class="text-gray-800">Select State</option>
+                        </select>
+                        <select id="from-city" class="w-1/2 p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition text-white">
+                            <option value="" class="text-gray-800">Select City</option>
+                        </select>
+                    </div>
+                </div>
+
+                 <!-- From (International Plane) -->
+                <div id="from-international-container" class="lg:col-span-2 hidden relative">
+                    <label for="from-international" class="block text-sm font-medium text-white/80 mb-1">From Airport</label>
+                    <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-plane-departure"></i></span>
+                        <input type="text" id="from-international" placeholder="e.g., Dubai, London" class="input-with-icon w-full p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" autocomplete="off">
+                    </div>
+                    <div id="from-autocomplete-results" class="autocomplete-results absolute z-10 w-full bg-white text-gray-800 rounded-b-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                </div>
+                
+                <!-- From (Train/Metro) -->
+                <div id="from-station-container" class="lg:col-span-2 hidden relative">
+                    <label for="from-station" class="block text-sm font-medium text-white/80 mb-1">From Station</label>
+                     <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-train"></i></span>
+                        <input type="text" id="from-station" placeholder="e.g., New Delhi, Mumbai Central" class="input-with-icon w-full p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" autocomplete="off">
+                    </div>
+                    <div id="from-station-autocomplete" class="autocomplete-results absolute z-10 w-full bg-white text-gray-800 rounded-b-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                </div>
+                
+                <!-- From (Bus) -->
+                <div id="from-bus-container" class="lg:col-span-2 hidden relative">
+                     <label for="from-bus-location" class="block text-sm font-medium text-white/80 mb-1">Pickup Point</label>
+                     <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" id="from-bus-location" placeholder="Select on map" class="input-with-icon bus-location-input w-full p-3 bg-white/10 border border-white/20 rounded-lg transition" readonly>
+                    </div>
+                </div>
+
+                <!-- To (Domestic Plane) -->
+                <div id="to-domestic-container" class="lg:col-span-2">
+                    <label for="to-state" class="block text-sm font-medium text-white/80 mb-1">To</label>
+                    <div class="flex gap-2">
+                        <select id="to-state" class="w-1/2 p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition text-white">
+                            <option value="" class="text-gray-800">Select State</option>
+                        </select>
+                        <select id="to-city" class="w-1/2 p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition text-white">
+                            <option value="" class="text-gray-800">Select City</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- To (International Plane) -->
+                <div id="to-international-container" class="lg:col-span-2 hidden relative">
+                    <label for="to-international" class="block text-sm font-medium text-white/80 mb-1">To Airport</label>
+                     <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-plane-arrival"></i></span>
+                        <input type="text" id="to-international" placeholder="e.g., New York, Singapore" class="input-with-icon w-full p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" autocomplete="off">
+                    </div>
+                    <div id="to-autocomplete-results" class="autocomplete-results absolute z-10 w-full bg-white text-gray-800 rounded-b-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                </div>
+
+                <!-- To (Train/Metro) -->
+                <div id="to-station-container" class="lg:col-span-2 hidden relative">
+                    <label for="to-station" class="block text-sm font-medium text-white/80 mb-1">To Station</label>
+                    <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-train"></i></span>
+                        <input type="text" id="to-station" placeholder="e.g., Howrah, Chennai Central" class="input-with-icon w-full p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" autocomplete="off">
+                    </div>
+                    <div id="to-station-autocomplete" class="autocomplete-results absolute z-10 w-full bg-white text-gray-800 rounded-b-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                </div>
+                
+                <!-- To (Bus) -->
+                <div id="to-bus-container" class="lg:col-span-2 hidden relative">
+                     <label for="to-bus-location" class="block text-sm font-medium text-white/80 mb-1">Drop Point</label>
+                     <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" id="to-bus-location" placeholder="Select on map" class="input-with-icon bus-location-input w-full p-3 bg-white/10 border border-white/20 rounded-lg transition" readonly>
+                    </div>
+                </div>
+
+
+                <!-- Date of Travel -->
+                <div id="date-container" class="lg:col-span-2">
+                     <label for="travel-date" class="block text-sm font-medium text-white/80 mb-1">Date</label>
+                     <div class="input-with-icon-container">
+                        <span class="input-icon"><i class="fas fa-calendar-alt"></i></span>
+                        <input type="date" id="travel-date" class="input-with-icon w-full p-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition" style="color-scheme: dark;">
+                    </div>
+                </div>
+
+                <!-- Search Button -->
+                <button type="submit" class="btn-gradient w-full text-white font-bold p-3 rounded-lg shadow-lg flex items-center justify-center gap-2 lg:col-span-1">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Search Results -->
+        <div id="results-container" class="mt-12 max-w-4xl mx-auto">
+            <!-- Results will be dynamically inserted here -->
+            <div id="placeholder" class="text-center text-white/70 py-10">
+                <i class="fas fa-map-marked-alt text-4xl mb-4"></i>
+                <p>Your travel search results will appear here.</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Map Modal -->
+    <div id="map-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[60] flex items-center justify-center p-4 hidden opacity-0">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl transform transition-transform duration-300 scale-95">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 id="map-modal-title" class="text-lg font-semibold text-gray-800">Select Location</h3>
+                <button id="close-map-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div class="p-4">
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="map-search-input" placeholder="Search for a location..." class="w-full p-2 border border-gray-300 rounded-lg">
+                    <button id="map-search-btn" class="bg-blue-600 text-white px-4 rounded-lg"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="map"></div>
+                 <p id="selected-address" class="text-center text-sm text-gray-600 mt-2 h-4"></p>
+            </div>
+            <div class="p-4 border-t text-right">
+                <button id="confirm-location-btn" class="btn-gradient text-white px-6 py-2 rounded-lg">Confirm Location</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Footer -->
+    <footer class="bg-black/40 text-white pt-12 mt-12 relative z-10 border-t border-white/20">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="md:col-span-1">
+                    <h3 class="text-xl font-bold mb-4"><i class="fas fa-route mr-2"></i>Bharat Yatra</h3>
+                    <p class="text-gray-400">Discover the heart of India with seamless travel booking for every mode of transport.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Home</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Offers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+                 <div>
+                    <h4 class="font-semibold text-lg mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">FAQ</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li>
+                    </ul>
+                </div>
+                 <div>
+                    <h4 class="font-semibold text-lg mb-4">Follow Us</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white text-2xl transition"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white text-2xl transition"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white text-2xl transition"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white text-2xl transition"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 pt-6 border-t border-white/20 text-center text-gray-500">
+                 <p>&copy; 2025 Bharat Yatra. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- Notification Modal -->
+    <div id="notification-modal" class="notification-modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0">
+        <div class="bg-white rounded-xl shadow-2xl p-6 md:p-8 w-full max-w-sm text-center transform transition-transform duration-300 scale-95">
+            <div id="notification-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                 <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="notification-title">Error</h3>
+            <div class="mt-2">
+                <p class="text-sm text-gray-500" id="notification-message">Something went wrong.</p>
+            </div>
+            <div class="mt-6">
+                <button type="button" id="notification-close-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet Map Library JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DATA ---
+            const locations = { "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Tirupati", "Guntur"], "Arunachal Pradesh": ["Itanagar", "Tawang", "Ziro"], "Assam": ["Guwahati", "Dibrugarh", "Silchar"], "Bihar": ["Patna", "Gaya", "Muzaffarpur"], "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur"], "Goa": ["Panaji", "Vasco da Gama", "Margao"], "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot"], "Haryana": ["Faridabad", "Gurugram", "Panipat"], "Himachal Pradesh": ["Shimla", "Manali", "Dharamshala"], "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad"], "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Mangaluru"], "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode"], "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior"], "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik"], "Manipur": ["Imphal", "Bishnupur"], "Meghalaya": ["Shillong", "Cherrapunji"], "Mizoram": ["Aizawl", "Lunglei"], "Nagaland": ["Kohima", "Dimapur"], "Odisha": ["Bhubaneswar", "Cuttack", "Puri"], "Punjab": ["Ludhiana", "Amritsar", "Jalandhar"], "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota"], "Sikkim": ["Gangtok", "Pelling"], "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli"], "Telangana": ["Hyderabad", "Warangal", "Nizamabad"], "Tripura": ["Agartala", "Udaipur"], "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Prayagraj"], "Uttarakhand": ["Dehradun", "Haridwar", "Rishikesh"], "West Bengal": ["Kolkata", "Asansol", "Siliguri", "Durgapur"], "Delhi": ["New Delhi", "Old Delhi"], };
+            const internationalAirports = [ { name: "Hartsfield-Jackson Atlanta International Airport", city: "Atlanta", country: "USA", code: "ATL" }, { name: "Dubai International Airport", city: "Dubai", country: "UAE", code: "DXB" }, { name: "Dallas/Fort Worth International Airport", city: "Dallas", country: "USA", code: "DFW" }, { name: "London Heathrow Airport", city: "London", country: "UK", code: "LHR" }, { name: "Denver International Airport", city: "Denver", country: "USA", code: "DEN" }, { name: "Istanbul Airport", city: "Istanbul", country: "Turkey", code: "IST" }, { name: "Indira Gandhi International Airport", city: "New Delhi", country: "India", code: "DEL" }, { name: "O'Hare International Airport", city: "Chicago", country: "USA", code: "ORD" }, { name: "Los Angeles International Airport", city: "Los Angeles", country: "USA", code: "LAX" }, { name: "Paris-Charles de Gaulle Airport", city: "Paris", country: "France", code: "CDG" }, { name: "Chhatrapati Shivaji Maharaj International Airport", city: "Mumbai", country: "India", code: "BOM" }, { name: "Singapore Changi Airport", city: "Singapore", country: "Singapore", code: "SIN" }, { name: "Suvarnabhumi Airport", city: "Bangkok", country: "Thailand", code: "BKK" }, { name: "Tokyo Haneda Airport", city: "Tokyo", country: "Japan", code: "HND" }, { name: "Sydney Kingsford Smith Airport", city: "Sydney", country: "Australia", code: "SYD" }, { name: "Toronto Pearson International Airport", city: "Toronto", country: "Canada", code: "YYZ" }, { name: "JFK International Airport", city: "New York", country: "USA", code: "JFK" }, { name: "Frankfurt Airport", city: "Frankfurt", country: "Germany", code: "FRA" }, { name: "Beijing Capital International Airport", city: "Beijing", country: "China", code: "PEK" }, { name: "Hamad International Airport", city: "Doha", country: "Qatar", code: "DOH" } ];
+            const trainStations = [ { name: "New Delhi Railway Station", city: "New Delhi", code: "NDLS" }, { name: "Old Delhi Railway Station", city: "Old Delhi", code: "DLI" }, { name: "Hazrat Nizamuddin", city: "New Delhi", code: "NZM" }, { name: "Chhatrapati Shivaji Maharaj Terminus", city: "Mumbai", code: "CSMT" }, { name: "Mumbai Central", city: "Mumbai", code: "MMCT" }, { name: "Dadar", city: "Mumbai", code: "DR" }, { name: "Howrah Junction", city: "Kolkata", code: "HWH" }, { name: "Sealdah", city: "Kolkata", code: "SDAH" }, { name: "Chennai Central", city: "Chennai", code: "MAS" }, { name: "Egmore", city: "Chennai", code: "MS" }, { name: "KSR Bengaluru City Junction", city: "Bengaluru", code: "SBC" }, { name: "Yesvantpur Junction", city: "Bengaluru", code: "YPR" }, { name: "Secunderabad Junction", city: "Hyderabad", code: "SC" }, { name: "Pune Junction", city: "Pune", code: "PUNE" }, { name: "Jaipur Junction", city: "Jaipur", code: "JP" }, { name: "Lucknow Charbagh", city: "Lucknow", code: "LKO" }, { name: "Varanasi Junction", city: "Varanasi", code: "BSB" }, { name: "Patna Junction", city: "Patna", code: "PNBE" }, { name: "Ahmedabad Junction", city: "Ahmedabad", code: "ADI" } ];
+            const metroStations = { "Delhi": [ { name: "Rajiv Chowk", line: ["Blue", "Yellow"] }, { name: "Kashmere Gate", line: ["Red", "Yellow", "Violet"] }, { name: "Mandi House", line: ["Blue", "Violet"] }, { name: "Hauz Khas", line: ["Yellow", "Magenta"] }, { name: "New Delhi", line: ["Yellow", "Airport Express"] } ], "Mumbai": [ { name: "Ghatkopar", line: ["Blue"] }, { name: "Andheri", line: ["Blue"] }, { name: "Versova", line: ["Blue"] }, { name: "Marol Naka", line: ["Blue"]} ], "Bengaluru": [ { name: "Majestic (Kempegowda Station)", line: ["Purple", "Green"] }, { name: "MG Road", line: ["Purple"] }, { name: "Indiranagar", line: ["Purple"] }, { name: "Jayanagar", line: ["Green"] } ], "Kolkata": [ { name: "Esplanade", line: ["North-South", "East-West"] }, { name: "Dum Dum", line: ["North-South"] }, { name: "Park Street", line: ["North-South"] }, { name: "Sealdah", line: ["East-West"]} ], "Chennai": [ { name: "Central Metro", line: ["Green", "Blue"] }, { name: "Alandur", line: ["Green", "Blue"] }, { name: "Guindy", line: ["Blue"] } ], "Hyderabad": [ { name: "Ameerpet", line: ["Red", "Blue"] }, { name: "MG Bus Station", line: ["Red", "Green"] }, { name: "Hitech City", line: ["Blue"] } ] };
+            const states = Object.keys(locations).sort();
+
+            // --- DOM ELEMENTS ---
+            const header = document.querySelector('header');
+            const heroTitle = document.getElementById('hero-title');
+            const heroSubtitle = document.getElementById('hero-subtitle');
+            const fromStateSelect = document.getElementById('from-state'), toStateSelect = document.getElementById('to-state');
+            const fromCitySelect = document.getElementById('from-city'), toCitySelect = document.getElementById('to-city');
+            const searchForm = document.getElementById('search-form'), resultsContainer = document.getElementById('results-container');
+            const transportIcons = document.querySelectorAll('.transport-icon'), dateContainer = document.getElementById('date-container');
+            const notificationModal = document.getElementById('notification-modal'), notificationMessage = document.getElementById('notification-message'), notificationCloseBtn = document.getElementById('notification-close-btn');
+            const tripTypeContainer = document.getElementById('trip-type-container'), tripTypeDomesticBtn = document.getElementById('trip-type-domestic'), tripTypeInternationalBtn = document.getElementById('trip-type-international');
+            const fromDomesticContainer = document.getElementById('from-domestic-container'), toDomesticContainer = document.getElementById('to-domestic-container');
+            const fromInternationalContainer = document.getElementById('from-international-container'), toInternationalContainer = document.getElementById('to-international-container');
+            const fromInternationalInput = document.getElementById('from-international'), toInternationalInput = document.getElementById('to-international');
+            const fromAutocompleteResults = document.getElementById('from-autocomplete-results'), toAutocompleteResults = document.getElementById('to-autocomplete-results');
+            const fromStationContainer = document.getElementById('from-station-container'), toStationContainer = document.getElementById('to-station-container');
+            const fromStationInput = document.getElementById('from-station'), toStationInput = document.getElementById('to-station');
+            const fromStationAutocomplete = document.getElementById('from-station-autocomplete'), toStationAutocomplete = document.getElementById('to-station-autocomplete');
+            const fromBusContainer = document.getElementById('from-bus-container'), toBusContainer = document.getElementById('to-bus-container');
+            const fromBusLocationInput = document.getElementById('from-bus-location'), toBusLocationInput = document.getElementById('to-bus-location');
+            const mapModal = document.getElementById('map-modal'), mapModalTitle = document.getElementById('map-modal-title'), closeMapModalBtn = document.getElementById('close-map-modal');
+            const mapSearchInput = document.getElementById('map-search-input'), mapSearchBtn = document.getElementById('map-search-btn');
+            const selectedAddress = document.getElementById('selected-address'), confirmLocationBtn = document.getElementById('confirm-location-btn');
+
+            let activeMode = 'plane', activeTripType = 'domestic';
+            let map, marker, currentMapSelection, selectedLocation;
+
+            // --- FUNCTIONS ---
+            function showNotification(message) { notificationMessage.textContent = message; notificationModal.classList.remove('hidden'); setTimeout(() => { notificationModal.classList.remove('opacity-0'); notificationModal.querySelector('div').classList.remove('scale-95'); }, 10); }
+            function hideNotification() { notificationModal.classList.add('opacity-0'); notificationModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { notificationModal.classList.add('hidden'); }, 300); }
+            function populateStates() { states.forEach(state => { const o1 = new Option(state, state); o1.classList.add('text-gray-800'); fromStateSelect.add(o1); const o2 = new Option(state, state); o2.classList.add('text-gray-800'); toStateSelect.add(o2); }); }
+            function populateCities(stateSelect, citySelect) { const state = stateSelect.value; citySelect.innerHTML = '<option value="" class="text-gray-800">Select City</option>'; if (state && locations[state]) { locations[state].forEach(city => { const o = new Option(city, city); o.classList.add('text-gray-800'); citySelect.add(o); }); } }
+            
+            function handleSearch(event) {
+                event.preventDefault();
+                document.getElementById('placeholder').style.display = 'none';
+                let from, to;
+                if (activeMode === 'plane' && activeTripType === 'international') { from = fromInternationalInput.value; to = toInternationalInput.value; } 
+                else if (activeMode === 'train' || activeMode === 'metro') { from = fromStationInput.value; to = toStationInput.value; } 
+                else if (activeMode === 'bus') { from = fromBusLocationInput.value; to = toBusLocationInput.value; }
+                else { from = fromCitySelect.value; to = toCitySelect.value; }
+                
+                if (!from || !to) { showNotification('Please select both departure and arrival locations.'); return; }
+                if (from === to) { showNotification('Departure and arrival locations cannot be the same.'); return; }
+
+                resultsContainer.innerHTML = ''; 
+                const count = Math.floor(Math.random() * 5) + 3;
+                for (let i = 0; i < count; i++) {
+                    const card = createResultCard(from, to);
+                    card.classList.add('result-card-enter');
+                    card.style.animationDelay = `${i * 100}ms`;
+                    resultsContainer.appendChild(card);
+                }
+            }
+            
+            function createResultCard(from, to) {
+                const card = document.createElement('div');
+                card.className = 'result-card bg-white rounded-xl shadow-lg p-6 mb-4 flex flex-col md:flex-row items-center gap-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 opacity-0';
+                const modes = { plane: { icon: 'fa-plane', color: 'blue-500', carrier: ['IndiGo', 'Air India', 'Vistara', 'SpiceJet', 'Emirates', 'Lufthansa'][Math.floor(Math.random() * 6)] }, train: { icon: 'fa-train-subway', color: 'red-500', carrier: ['Shatabdi Exp', 'Rajdhani Exp', 'Duronto Exp', 'Tejas Exp'][Math.floor(Math.random() * 4)] }, bus: { icon: 'fa-bus', color: 'green-500', carrier: ['RedBus', 'Volvo Sleeper', 'State Transport', 'Zingbus'][Math.floor(Math.random() * 4)] }, metro: { icon: 'fa-train-tram', color: 'purple-500', carrier: ['Blue Line', 'Yellow Line', 'Red Line', 'Green Line'][Math.floor(Math.random() * 4)] } };
+                const currentMode = modes[activeMode];
+                const startTime = `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')} ${Math.random() > 0.5 ? 'AM' : 'PM'}`, endTime = `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')} ${Math.random() > 0.5 ? 'AM' : 'PM'}`, duration = `${Math.floor(Math.random() * 10) + 1}h ${Math.floor(Math.random() * 60)}m`, price = `₹${Math.floor(Math.random() * 5000) + 1000}`;
+                card.innerHTML = `<div class="w-full md:w-1/5 text-center"><i class="fas ${currentMode.icon} text-3xl text-${currentMode.color} mb-2"></i><p class="font-semibold">${currentMode.carrier}</p></div><div class="w-full md:w-3/5"><div class="flex justify-between items-center"><div><p class="text-xl font-bold">${startTime}</p><p class="text-gray-500 truncate max-w-[120px]">${from.split(',')[0]}</p></div><div class="text-center text-sm text-gray-500"><p>${duration}</p><div class="w-24 h-px bg-gray-300 my-1"></div><p>Non-Stop</p></div><div><p class="text-xl font-bold text-right">${endTime}</p><p class="text-gray-500 text-right truncate max-w-[120px]">${to.split(',')[0]}</p></div></div></div><div class="w-full md:w-1/5 text-center md:text-right"><p class="text-2xl font-bold text-blue-600">${price}</p><button class="btn-gradient mt-2 text-white px-6 py-2 rounded-lg w-full md:w-auto">Book Now</button></div>`;
+                return card;
+            }
+
+            function handleAutocomplete(inputElem, resultsElem, sourceData, formatFn) {
+                const query = inputElem.value.toLowerCase();
+                resultsElem.innerHTML = '';
+                if (query.length === 0) {
+                    resultsElem.classList.add('hidden');
+                    return;
+                }
+                const filteredData = sourceData.filter(item => Object.values(item).some(val => String(val).toLowerCase().includes(query))).slice(0, 10);
+                if (filteredData.length > 0) {
+                    filteredData.forEach(item => {
+                        const formatted = formatFn(item);
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'autocomplete-item p-3 border-b border-gray-200';
+                        itemDiv.innerHTML = formatted.html;
+                        itemDiv.addEventListener('click', () => {
+                            inputElem.value = formatted.value;
+                            resultsElem.classList.add('hidden');
+                            resultsElem.innerHTML = '';
+                        });
+                        resultsElem.appendChild(itemDiv);
+                    });
+                    resultsElem.classList.remove('hidden');
+                } else {
+                    resultsElem.classList.add('hidden');
+                }
+            }
+            
+            function adjustFormForMode(mode) {
+                const allFrom = [fromDomesticContainer, fromInternationalContainer, fromStationContainer, fromBusContainer];
+                const allTo = [toDomesticContainer, toInternationalContainer, toStationContainer, toBusContainer];
+                allFrom.forEach(c => c.classList.add('hidden'));
+                allTo.forEach(c => c.classList.add('hidden'));
+
+                tripTypeContainer.classList.toggle('hidden', mode !== 'plane');
+
+                if (mode === 'plane') {
+                    handleTripTypeChange(activeTripType);
+                } else if (mode === 'train' || mode === 'metro') {
+                    fromStationContainer.classList.remove('hidden');
+                    toStationContainer.classList.remove('hidden');
+                } else if (mode === 'bus') {
+                    fromBusContainer.classList.remove('hidden');
+                    toBusContainer.classList.remove('hidden');
+                }
+
+                dateContainer.classList.toggle('hidden', mode === 'metro');
+                if (mode !== 'metro') document.getElementById('travel-date').valueAsDate = new Date();
+            }
+            
+            function handleTripTypeChange(type) {
+                activeTripType = type;
+                fromStateSelect.value = ''; fromCitySelect.innerHTML = '<option value="" class="text-gray-800">Select City</option>';
+                toStateSelect.value = ''; toCitySelect.innerHTML = '<option value="" class="text-gray-800">Select City</option>';
+                fromInternationalInput.value = ''; toInternationalInput.value = '';
+
+                if (type === 'domestic') {
+                    tripTypeDomesticBtn.classList.add('bg-blue-600', 'text-white');
+                    tripTypeDomesticBtn.classList.remove('text-white/60');
+                    tripTypeInternationalBtn.classList.remove('bg-blue-600', 'text-white');
+                    tripTypeInternationalBtn.classList.add('text-white/60');
+                    fromDomesticContainer.classList.remove('hidden');
+                    toDomesticContainer.classList.remove('hidden');
+                    fromInternationalContainer.classList.add('hidden');
+                    toInternationalContainer.classList.add('hidden');
+                } else {
+                    tripTypeInternationalBtn.classList.add('bg-blue-600', 'text-white');
+                    tripTypeInternationalBtn.classList.remove('text-white/60');
+                    tripTypeDomesticBtn.classList.remove('bg-blue-600', 'text-white');
+                    tripTypeDomesticBtn.classList.add('text-white/60');
+                    fromDomesticContainer.classList.add('hidden');
+                    toDomesticContainer.classList.add('hidden');
+                    fromInternationalContainer.classList.remove('hidden');
+                    toInternationalContainer.classList.remove('hidden');
+                }
+            }
+
+            // --- MAP FUNCTIONS ---
+            function openMapModal(type) {
+                currentMapSelection = type;
+                mapModalTitle.textContent = `Select ${type === 'from' ? 'Pickup' : 'Drop'} Point`;
+                mapModal.classList.remove('hidden');
+                setTimeout(() => { mapModal.classList.remove('opacity-0'); mapModal.querySelector('div').classList.remove('scale-95'); }, 10);
+                if (!map) initMap();
+                else setTimeout(() => map.invalidateSize(), 400);
+                selectedAddress.textContent = 'Pan and zoom to select a location.';
+            }
+
+            function closeMapModal() {
+                mapModal.classList.add('opacity-0');
+                mapModal.querySelector('div').classList.add('scale-95');
+                setTimeout(() => mapModal.classList.add('hidden'), 300);
+            }
+
+            function initMap() {
+                map = L.map('map').setView([20.5937, 78.9629], 5);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
+                marker = L.marker([20.5937, 78.9629], { draggable: true }).addTo(map);
+                map.on('click', (e) => updateMarker(e.latlng));
+                marker.on('dragend', () => updateMarker(marker.getLatLng()));
+                updateMarker(marker.getLatLng());
+            }
+
+            async function updateMarker(latlng) {
+                marker.setLatLng(latlng);
+                map.panTo(latlng);
+                selectedLocation = latlng;
+                selectedAddress.textContent = 'Fetching address...';
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`);
+                    const data = await response.json();
+                    selectedAddress.textContent = data && data.display_name ? data.display_name : 'Address not found.';
+                } catch (error) {
+                    selectedAddress.textContent = 'Could not fetch address.';
+                }
+            }
+
+            async function searchLocation() {
+                const query = mapSearchInput.value;
+                if (query.length < 3) return;
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in`);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const { lat, lon } = data[0];
+                        const latlng = { lat: parseFloat(lat), lng: parseFloat(lon) };
+                        map.setView(latlng, 13);
+                        updateMarker(latlng);
+                    } else { showNotification('Location not found in India.'); }
+                } catch (error) { showNotification('Error searching for location.'); }
+            }
+
+            // --- EVENT LISTENERS ---
+            window.addEventListener('scroll', () => {
+                header.classList.toggle('scrolled', window.scrollY > 50);
+                if(window.scrollY > 50) {
+                     header.querySelector('a.text-2xl').classList.remove('text-white');
+                     header.querySelector('a.text-2xl').classList.add('text-blue-600');
+                     header.querySelectorAll('div a.font-medium').forEach(el => {
+                         el.classList.remove('text-white/80', 'hover:text-white');
+                         el.classList.add('text-gray-600', 'hover:text-blue-600');
+                     });
+                } else {
+                     header.querySelector('a.text-2xl').classList.add('text-white');
+                     header.querySelector('a.text-2xl').classList.remove('text-blue-600');
+                     header.querySelectorAll('div a.font-medium').forEach(el => {
+                         el.classList.add('text-white/80', 'hover:text-white');
+                         el.classList.remove('text-gray-600', 'hover:text-blue-600');
+                     });
+                }
+            });
+
+            fromStateSelect.addEventListener('change', () => populateCities(fromStateSelect, fromCitySelect));
+            toStateSelect.addEventListener('change', () => populateCities(toStateSelect, toCitySelect));
+            searchForm.addEventListener('submit', handleSearch);
+            notificationCloseBtn.addEventListener('click', hideNotification);
+            tripTypeDomesticBtn.addEventListener('click', () => handleTripTypeChange('domestic'));
+            tripTypeInternationalBtn.addEventListener('click', () => handleTripTypeChange('international'));
+            fromInternationalInput.addEventListener('input', () => handleAutocomplete(fromInternationalInput, fromAutocompleteResults, internationalAirports, item => ({ html: `<p class="font-semibold">${item.city}, ${item.country} (${item.code})</p><p class="text-sm text-gray-500">${item.name}</p>`, value: `${item.city} (${item.code})` })));
+            toInternationalInput.addEventListener('input', () => handleAutocomplete(toInternationalInput, toAutocompleteResults, internationalAirports, item => ({ html: `<p class="font-semibold">${item.city}, ${item.country} (${item.code})</p><p class="text-sm text-gray-500">${item.name}</p>`, value: `${item.city} (${item.code})` })));
+            fromStationInput.addEventListener('input', () => handleAutocomplete(fromStationInput, fromStationAutocomplete, activeMode === 'train' ? trainStations : Object.values(metroStations).flat(), item => ({ html: `<p class="font-semibold">${item.name}</p><p class="text-sm text-gray-500">${item.city || `Line: ${item.line.join(', ')}`}</p>`, value: item.name })));
+            toStationInput.addEventListener('input', () => handleAutocomplete(toStationInput, toStationAutocomplete, activeMode === 'train' ? trainStations : Object.values(metroStations).flat(), item => ({ html: `<p class="font-semibold">${item.name}</p><p class="text-sm text-gray-500">${item.city || `Line: ${item.line.join(', ')}`}</p>`, value: item.name })));
+            
+            document.addEventListener('click', (event) => {
+                if (!fromInternationalContainer.contains(event.target)) fromAutocompleteResults.classList.add('hidden');
+                if (!toInternationalContainer.contains(event.target)) toAutocompleteResults.classList.add('hidden');
+                if (!fromStationContainer.contains(event.target)) fromStationAutocomplete.classList.add('hidden');
+                if (!toStationContainer.contains(event.target)) toStationAutocomplete.classList.add('hidden');
+            });
+
+            transportIcons.forEach(icon => { icon.addEventListener('click', () => { transportIcons.forEach(i => i.classList.remove('active')); icon.classList.add('active'); activeMode = icon.dataset.mode; adjustFormForMode(activeMode); }); });
+            fromBusLocationInput.addEventListener('click', () => openMapModal('from'));
+            toBusLocationInput.addEventListener('click', () => openMapModal('to'));
+            closeMapModalBtn.addEventListener('click', closeMapModal);
+            mapSearchBtn.addEventListener('click', searchLocation);
+            mapSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchLocation(); });
+            confirmLocationBtn.addEventListener('click', () => {
+                const targetInput = currentMapSelection === 'from' ? fromBusLocationInput : toBusLocationInput;
+                targetInput.value = selectedAddress.textContent;
+                closeMapModal();
+            });
+
+            // --- INITIALIZATION ---
+            populateStates();
+            adjustFormForMode(activeMode);
+            handleTripTypeChange(activeTripType);
+            document.getElementById('travel-date').valueAsDate = new Date();
+            heroTitle.classList.add('fade-in-up');
+            heroSubtitle.classList.add('fade-in-up');
+        });
+    </script>
+</body>
+</html>
+
